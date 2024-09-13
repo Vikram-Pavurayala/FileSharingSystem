@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Sharing System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 50px;
+        }
+        #online{
+        z-index:999;
+        font-size: 1rem;
+        position: absolute;
+        right: 10px;
+      }
+        #files-list {
+            margin-top: 20px;
+        }
+        .file-item {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="online">Online : <span id="count"></span></div>
+    <h1>Real-Time File Sharing System</h1>
+    <form id="upload-form" enctype="multipart/form-data">
+        <input type="file" id="fileInput" name="file" />
+        <button type="submit">Upload</button>
+    </form>
+
+    <h2>Uploaded Files</h2>
+    <div id="files-list"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+// Function to display files
+function displayFile(file) {
+    const filesList = document.getElementById('files-list');
+    const fileElement = document.createElement('div');
+    fileElement.classList.add('file-item');
+    fileElement.innerHTML = `<a href="${file.filePath}"  download = "${file.fileName}">${file.fileName}</a>`;
+    filesList.appendChild(fileElement);
+}
+
+// Handle file upload form submission
+document.getElementById('upload-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const fileInput = document.getElementById('fileInput');
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+
+    // Send file to server via fetch API
+    fetch('/upload', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('File uploaded:', data.filePath);
+    });
+});
+
+// Listen for file upload events from the server
+socket.on('fileUploaded', (data) => {
+    displayFile(data);
+});
+
+// Listen for existing files when connecting
+socket.on('existingFiles', (files) => {
+    files.forEach(file => displayFile(file));
+});
+        const countElement = document.getElementById('count');
+        socket.on('userCount', (count) => {
+            countElement.textContent = count;
+        });
+    </script>
+</body>
+</html>
+
